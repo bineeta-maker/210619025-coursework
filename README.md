@@ -1,4 +1,5 @@
-# ECS656U-765PLab2StartingPoint
+#  210619025-coursework
+
 Based upon https://github.com/sajeerzeji/SpringBoot-GRPC
 Commands for preparing the enviornment (Assuming you are in the main folder e.g. the one with the pom.xml file in it)
 1. sudo apt update
