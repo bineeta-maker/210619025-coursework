@@ -5,7 +5,7 @@ import io.grpc.stub.StreamObserver;
 import net.devh.boot.grpc.server.service.GrpcService;
 
 @GrpcService
-public class MatrixServiceImpl extends MatrixServiceGrpc.MatrixServiceImplBase {
+public class MatrixServerServiceImpl extends MatrixServiceGrpc.MatrixServiceImplBase {
 	@Override
 	public void addBlock(MatrixRequest request, StreamObserver<MatrixReply> reply) {
 		System.out.println("Request received from client:\n" + request);

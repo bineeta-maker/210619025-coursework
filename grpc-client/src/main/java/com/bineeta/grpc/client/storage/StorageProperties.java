@@ -8,7 +8,10 @@ public class StorageProperties {
 	/**
 	 * Folder location for storing files
 	 */
+	// local windows env
 	private String location = "D:\\localdata\\outputdata";
+	// cloud linux env
+	//private String location = "//localdata//outputdata";
 
 	public String getLocation() {
 		return location;

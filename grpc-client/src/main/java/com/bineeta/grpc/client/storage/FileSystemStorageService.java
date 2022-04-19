@@ -102,7 +102,6 @@ public class FileSystemStorageService implements StorageService {
 	@Override
 	public void deleteFile(MultipartFile file) {
 		try {
-			System.out.println("in here deleting");
 			if (file.isEmpty()) {
 				throw new StorageException("Failed to store empty file.");
 			}
@@ -110,7 +109,6 @@ public class FileSystemStorageService implements StorageService {
 							Paths.get(file.getOriginalFilename()))
 					.normalize().toAbsolutePath();
 			boolean bool = Files.deleteIfExists(destinationFile);
-			System.out.println("in here deleting"+bool);
 		}
 		catch (IOException e) {
 			throw new StorageException("Failed to store file.", e);

@@ -2,11 +2,9 @@ package com.bineeta.grpc;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -24,8 +22,30 @@ public class ReadFile {
         //String filename = "D:\\localdata\\inputdata\\matrix-error-1.txt";
 
         Path destinationFile = new File(filename).toPath();
-        System.out.println("destinationFile: "+destinationFile.toString().replace(".txt","-output.txt"));
- //       Path destinationFile = new File(filename).toPath();
+        System.out.println("destinationFile: " + destinationFile.toString().replace(".txt", "-output.txt"));
+
+        int numBlock = 16;
+        int cycle = (int) Math.sqrt(numBlock);
+        System.out.println("cycle" + cycle);
+        int t = 0;
+        for (int w = 0; w < cycle; w++) {
+            int b = 0;
+            for (int i = 0; i < cycle; i++) {
+                int a = w * cycle;
+                for (int j = b; j < numBlock; j = j + cycle) {
+                    t++;
+                    int nn = t % 3;
+                    System.out.println(a + " " + j+" "+nn);
+                    //multiplication call
+                    a++;
+                }
+                System.out.println("//ADD THE ABOVE DATAS");
+                b++;
+            }
+        }
+
+
+        //       Path destinationFile = new File(filename).toPath();
 
 
         //System.out.println(isValidFile(filename));

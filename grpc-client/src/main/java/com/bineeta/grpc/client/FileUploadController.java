@@ -3,7 +3,7 @@ package com.bineeta.grpc.client;
 import java.io.IOException;
 import java.util.stream.Collectors;
 
-import com.bineeta.grpc.client.logic.LogicService;
+import com.bineeta.grpc.client.logic.MultiplicationService;
 import com.bineeta.grpc.client.storage.StorageFileNotFoundException;
 import com.bineeta.grpc.client.storage.StorageService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,18 +22,17 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class FileUploadController {
 
 	private final StorageService storageService;
-	private final LogicService logicService;
+	private final MultiplicationService multiplicationService;
 
 	@Autowired
-	public FileUploadController(StorageService storageService, LogicService logicService) {
+	public FileUploadController(StorageService storageService, MultiplicationService multiplicationService) {
 		this.storageService = storageService;
-		this.logicService = logicService;
+		this.multiplicationService = multiplicationService;
 
 	}
 
 	@GetMapping("/")
 	public String listUploadedFiles(Model model) throws IOException {
-		System.out.println("listUploadedFiles model"+model);
 		model.addAttribute("files", storageService.loadAll().map(
 				path -> MvcUriComponentsBuilder.fromMethodName(FileUploadController.class,
 						"serveFile", path.getFileName().toString()).build().toUri().toString())
@@ -44,7 +43,6 @@ public class FileUploadController {
 	@GetMapping("/files/{filename:.+}")
 	@ResponseBody
 	public ResponseEntity<Resource> serveFile(@PathVariable String filename) {
-		System.out.println("serveFile filename"+filename);
 		Resource file = storageService.loadAsResource(filename);
 		return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION,
 				"attachment; filename=\"" + file.getFilename() + "\"").body(file);
@@ -53,19 +51,17 @@ public class FileUploadController {
 	@PostMapping("/")
 	public String handleFileUpload(@RequestParam("file") MultipartFile file,
 			RedirectAttributes redirectAttributes) {
-		System.out.println("handleFileUpload file"+file);
 		storageService.store(file);
-		boolean isValid = logicService.isValid(file);
+		boolean isValid = multiplicationService.isValid(file);
+		// This system can take both sync and async call. boolean set to test out both.
+		boolean synchronousCall = Boolean.TRUE;
 		if(isValid){
-			System.out.println("handleFileUpload correct"+file);
-			String result = logicService.getResults(file);
+			multiplicationService.getResults(file,synchronousCall);
 			redirectAttributes.addFlashAttribute("message",
 					"Matrix Multiplication Complete!");
-			//redirectAttributes.addFlashAttribute("message","Final result:"+result);
 			storageService.deleteFile(file);
 
 		}else{
-			System.out.println("handleFileUpload error"+file);
 			redirectAttributes.addFlashAttribute("message",
 					"Ooops Error in File. Matrix-Size should be ^2 :" + file.getOriginalFilename() + "!");
 			storageService.deleteFile(file);
