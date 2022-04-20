@@ -24,26 +24,35 @@ package matrixmult;
 service MatrixService{
   rpc MultiplyBlock (MatrixRequest) returns (MatrixReply) {}
   rpc AddBlock (MatrixRequest) returns (MatrixReply) {}
+  rpc AddAllBlock (MatrixRequests) returns (MatrixReply) {}
 }
 
 // The request message containing the two matricies
 message MatrixRequest {
-  int32 a00 = 1;
-  int32 a01 = 2;
-  int32 a10 = 3;
-  int32 a11 = 4;
-  int32 b00 = 5;
-  int32 b01 = 6;
-  int32 b10 = 7;
-  int32 b11 = 8;
+  int32 id = 1;
+  int32 a00 = 2;
+  int32 a01 = 3;
+  int32 a10 = 4;
+  int32 a11 = 5;
+  int32 b00 = 6;
+  int32 b01 = 7;
+  int32 b10 = 8;
+  int32 b11 = 9;
+  int64 elapseTime = 10;
 }
 
 // The response message containing the result marix
 message MatrixReply {
-  int32 c00 = 1;
-  int32 c01 = 2;
-  int32 c10 = 3;
-  int32 c11 = 4;
+  int32 id = 1;
+  int32 c00 = 2;
+  int32 c01 = 3;
+  int32 c10 = 4;
+  int32 c11 = 5;
+  int64 elapseTime = 6;
+}
+
+message MatrixRequests {
+ repeated MatrixRequest matrixRequest = 1;
 }
 
 
