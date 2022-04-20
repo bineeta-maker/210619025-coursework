@@ -12,19 +12,19 @@ public class MulitplicationUtils {
     public static List<MatrixServiceGrpc.MatrixServiceBlockingStub> getAvailableChannelBlockingStubs() {
         List<MatrixServiceGrpc.MatrixServiceBlockingStub> availableStubs = new ArrayList<>();
 
-        ManagedChannel channel1 = ManagedChannelBuilder.forAddress("35.188.202.145", 9090)
+        ManagedChannel channel1 = ManagedChannelBuilder.forAddress("35.193.235.25", 9090)
                 .usePlaintext().build();
         ManagedChannel channel2 = ManagedChannelBuilder.forAddress("34.67.205.179", 9090)
                 .usePlaintext().build();
-        ManagedChannel channel3 = ManagedChannelBuilder.forAddress("23.251.152.76", 9090)
+        ManagedChannel channel3 = ManagedChannelBuilder.forAddress("35.188.202.145", 9090)
                 .usePlaintext().build();
-        ManagedChannel channel4 = ManagedChannelBuilder.forAddress("34.135.0.141", 9090)
+        ManagedChannel channel4 = ManagedChannelBuilder.forAddress("34.133.104.145", 9090)
                 .usePlaintext().build();
-        ManagedChannel channel5 = ManagedChannelBuilder.forAddress("34.72.235.17", 9090)
+        ManagedChannel channel5 = ManagedChannelBuilder.forAddress("34.136.160.29", 9090)
                 .usePlaintext().build();
-        ManagedChannel channel6 = ManagedChannelBuilder.forAddress("34.134.148.1", 9090)
+        ManagedChannel channel6 = ManagedChannelBuilder.forAddress("23.251.152.76", 9090)
                 .usePlaintext().build();
-        ManagedChannel channel7 = ManagedChannelBuilder.forAddress("35.239.90.27", 9090)
+        ManagedChannel channel7 = ManagedChannelBuilder.forAddress("34.135.0.141", 9090)
                 .usePlaintext().build();
         ManagedChannel channel8 = ManagedChannelBuilder.forAddress("35.184.205.152", 9090)
                 .usePlaintext().build();
@@ -63,19 +63,19 @@ public class MulitplicationUtils {
 
         List<MatrixServiceGrpc.MatrixServiceStub> availableStubs = new ArrayList<>();
 
-        ManagedChannel channel1 = ManagedChannelBuilder.forAddress("35.188.202.145", 9090)
+        ManagedChannel channel1 = ManagedChannelBuilder.forAddress("35.193.235.25", 9090)
                 .usePlaintext().build();
         ManagedChannel channel2 = ManagedChannelBuilder.forAddress("34.67.205.179", 9090)
                 .usePlaintext().build();
-        ManagedChannel channel3 = ManagedChannelBuilder.forAddress("23.251.152.76", 9090)
+        ManagedChannel channel3 = ManagedChannelBuilder.forAddress("35.188.202.145", 9090)
                 .usePlaintext().build();
-        ManagedChannel channel4 = ManagedChannelBuilder.forAddress("34.135.0.141", 9090)
+        ManagedChannel channel4 = ManagedChannelBuilder.forAddress("34.133.104.145", 9090)
                 .usePlaintext().build();
-        ManagedChannel channel5 = ManagedChannelBuilder.forAddress("34.72.235.17", 9090)
+        ManagedChannel channel5 = ManagedChannelBuilder.forAddress("34.136.160.29", 9090)
                 .usePlaintext().build();
-        ManagedChannel channel6 = ManagedChannelBuilder.forAddress("34.134.148.1", 9090)
+        ManagedChannel channel6 = ManagedChannelBuilder.forAddress("23.251.152.76", 9090)
                 .usePlaintext().build();
-        ManagedChannel channel7 = ManagedChannelBuilder.forAddress("35.239.90.27", 9090)
+        ManagedChannel channel7 = ManagedChannelBuilder.forAddress("34.135.0.141", 9090)
                 .usePlaintext().build();
         ManagedChannel channel8 = ManagedChannelBuilder.forAddress("35.184.205.152", 9090)
                 .usePlaintext().build();
