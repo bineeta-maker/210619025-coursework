@@ -9,7 +9,7 @@ import java.util.List;
 
 public class MulitplicationUtils {
 
-    public List<MatrixServiceGrpc.MatrixServiceBlockingStub> getAvailableChannelBlockingStubs() {
+    public static List<MatrixServiceGrpc.MatrixServiceBlockingStub> getAvailableChannelBlockingStubs() {
         List<MatrixServiceGrpc.MatrixServiceBlockingStub> availableStubs = new ArrayList<>();
 
         ManagedChannel channel1 = ManagedChannelBuilder.forAddress("35.188.202.145", 9090)
@@ -59,7 +59,7 @@ public class MulitplicationUtils {
 
     }
 
-    public List<MatrixServiceGrpc.MatrixServiceStub> getAvailableChannelStubs() {
+    public static List<MatrixServiceGrpc.MatrixServiceStub> getAvailableChannelStubs() {
 
         List<MatrixServiceGrpc.MatrixServiceStub> availableStubs = new ArrayList<>();
 

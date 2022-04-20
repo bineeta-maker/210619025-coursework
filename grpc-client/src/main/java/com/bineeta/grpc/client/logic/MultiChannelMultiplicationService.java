@@ -66,7 +66,7 @@ public class MultiChannelMultiplicationService implements MultiplicationService 
         int sn = 0;
         if (synchronous) {
             long startTime = System.nanoTime();
-            availableBlockingStubs = new MulitplicationUtils().getAvailableChannelBlockingStubs();
+            availableBlockingStubs = MulitplicationUtils.getAvailableChannelBlockingStubs();
             int cycle = (int) Math.sqrt(totalBlock);
             for (int w = 0; w < cycle; w++) {
                 int b = 0;
