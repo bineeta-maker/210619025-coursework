@@ -1,6 +1,6 @@
 package com.bineeta.grpc.client.logic;
 
-
+import com.bineeta.grpc.client.logic.utils.MulitplicationUtils;
 import com.bineeta.grpc.client.storage.StorageException;
 import com.bineeta.grpc.client.storage.StorageProperties;
 import com.bineeta.grpc.server.MatrixReply;
@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -22,13 +23,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-@Service
+@Service //comment to perform single channel grpcCalls
 public class MultiChannelMultiplicationService implements MultiplicationService {
     private final Path rootLocation;
+    private int[] addresses = {9090, 9092, 9093, 9090, 9092, 9093, 9090, 9092, 9093};
 
     @Autowired
     public MultiChannelMultiplicationService(StorageProperties properties) {
@@ -36,27 +39,35 @@ public class MultiChannelMultiplicationService implements MultiplicationService 
     }
 
     @Override
-    public String getResults(MultipartFile file, Boolean synchronous) {
+    public String getResults(MultipartFile file, double deadline, Boolean synchronous) {
 
         Path destinationFile = getFile(file);
-        List<List<Integer>> splitMatrices = getSplitMatrices(destinationFile);
-        int numBlock = splitMatrices.size();
+
         List<String> resultMatrices = new ArrayList<>();
         List<MatrixReply> blockList = null;
         MatrixReply A = null;
-        ManagedChannel channel;
+        ManagedChannel channel = null;
         StringBuffer str = new StringBuffer();
-        List<MatrixServiceGrpc.MatrixServiceBlockingStub> availableStubs = new ArrayList<>();
 
-        int totalServer = 3;
+        List<MatrixServiceGrpc.MatrixServiceBlockingStub> availableBlockingStubs = new ArrayList<>();
+        List<MatrixServiceGrpc.MatrixServiceStub> availableStubs = new ArrayList<>();
+        MatrixServiceGrpc.MatrixServiceStub stub = null;
+
+        List<List<Integer>> splitMatrices = getSplitMatrices(destinationFile);
         int totalBlock = splitMatrices.size();
+        int numBlockCalls = (int) (totalBlock * Math.sqrt(totalBlock));
+        int totalServer = 3;
 
-        System.out.println("Actual FUN begins" + splitMatrices);
+        System.out.println("ACTUAL FUN BEGINS:" + splitMatrices);
         //MatrixReplyStreamObserver replyStream = new MatrixReplyStreamObserver(numBlock, destinationFile);
+
+        // No of servers needed
+        int numServerNeeded = getServerNeeded(splitMatrices, deadline);
+
         if (synchronous) {
             long startTime = System.nanoTime();
-            availableStubs = getAvailableChannelStubs();
-            int cycle = (int) Math.sqrt(numBlock);
+            availableBlockingStubs = new MulitplicationUtils().getAvailableChannelBlockingStubs();
+            int cycle = (int) Math.sqrt(totalBlock);
             int t = 0;
             for (int w = 0; w < cycle; w++) {
                 int b = 0;
@@ -66,7 +77,7 @@ public class MultiChannelMultiplicationService implements MultiplicationService 
                     MatrixReply added = MatrixReply.newBuilder()
                             .setC00(0).setC01(0).setC10(0).setC11(0).build();
                     str = new StringBuffer("");
-                    for (int j = b; j < numBlock; j = j + cycle) {
+                    for (int j = b; j < totalBlock; j = j + cycle) {
                         //multiplication call
                         List<Integer> M1 = splitMatrices.get(a);
                         List<Integer> M2 = splitMatrices.get(j);
@@ -74,12 +85,12 @@ public class MultiChannelMultiplicationService implements MultiplicationService 
                         t++;
                         int nn = t % 3;
 
-                        A = availableStubs.get(nn).multiplyBlock(MatrixRequest.newBuilder()//First Result Block Calculation
+                        A = availableBlockingStubs.get(nn).multiplyBlock(MatrixRequest.newBuilder()//First Result Block Calculation
                                 .setA00(M1.get(0)).setA01(M1.get(1)).setA10(M1.get(2)).setA11(M1.get(3))
                                 .setB00(M2.get(0)).setB01(M2.get(1)).setB10(M2.get(2)).setB11(M2.get(3))
                                 .build());
                         // keep on adding for each row and column
-                        added = availableStubs.get(nn).addBlock(MatrixRequest.newBuilder()//First Result Block Calculation
+                        added = availableBlockingStubs.get(nn).addBlock(MatrixRequest.newBuilder()//First Result Block Calculation
                                 .setA00(added.getC00()).setA01(added.getC01()).setA10(added.getC10()).setA11(added.getC11())
                                 .setB00(A.getC00()).setB01(A.getC01()).setB10(A.getC10()).setB11(A.getC11()).build());
                         a++;
@@ -95,34 +106,93 @@ public class MultiChannelMultiplicationService implements MultiplicationService 
 
             formResult(destinationFile, resultMatrices);
         } else {
+            long startTime = System.nanoTime();
+            //availableStubs = new MulitplicationUtils().getAvailableChannelStubs();
 
+            MatrixReplyStreamObserver replyStream =
+                    new MatrixReplyStreamObserver(numBlockCalls, destinationFile, Boolean.TRUE);
+            int t = 0;
+            int cycle = (int) Math.sqrt(totalBlock);
+            for (int w = 0; w < cycle; w++) {
+                int b = 0;
+                for (int i = 0; i < cycle; i++) {
+                    int a = w * cycle;
+                    blockList = new ArrayList<>();
+                    MatrixReply added = MatrixReply.newBuilder()
+                            .setC00(0).setC01(0).setC10(0).setC11(0).build();
+                    str = new StringBuffer("");
+
+                    int m = (w * cycle) + i;
+                    for (int j = b; j < totalBlock; j = j + cycle) {
+                        //multiplication call
+                        List<Integer> M1 = splitMatrices.get(a);
+                        List<Integer> M2 = splitMatrices.get(j);
+                        // multiplty each block from M1 and M2
+                        t++;
+                        int nn = t % numServerNeeded;
+                        System.out.println("-----------nn"+nn);
+                        channel = ManagedChannelBuilder.forAddress("localhost", addresses[nn])
+                                .usePlaintext().build();
+                        stub = MatrixServiceGrpc.newStub(channel);
+                        stub.multiplyBlock(MatrixRequest.newBuilder().setId(m + 1)
+                                .setA00(M1.get(0)).setA01(M1.get(1)).setA10(M1.get(2)).setA11(M1.get(3))
+                                .setB00(M2.get(0)).setB01(M2.get(1)).setB10(M2.get(2)).setB11(M2.get(3))
+                                .build(), replyStream);
+                        try {
+                            channel.awaitTermination(2, TimeUnit.SECONDS);
+                        } catch (InterruptedException e) {
+                            System.out.println("AWAITTING CLOSURE: " + e.getLocalizedMessage());
+                        }
+                        a++;
+                    }
+                    b++;
+                }
+            }
         }
-        //channel.shutdown();
-
         return "DONE";
     }
 
-    private List<MatrixServiceGrpc.MatrixServiceBlockingStub> getAvailableChannelStubs() {
 
-        List<MatrixServiceGrpc.MatrixServiceBlockingStub> availableStubs = new ArrayList<>();
+    private int getServerNeeded(List<List<Integer>> splitMatrices, double deadline) {
 
-        ManagedChannel channel1 = ManagedChannelBuilder.forAddress("localhost", 9090)
-                .usePlaintext().build();
-        ManagedChannel channel2 = ManagedChannelBuilder.forAddress("localhost", 9092)
-                .usePlaintext().build();
-        ManagedChannel channel3 = ManagedChannelBuilder.forAddress("localhost", 9093)
-                .usePlaintext().build();
-        MatrixServiceGrpc.MatrixServiceBlockingStub stub1
-                = MatrixServiceGrpc.newBlockingStub(channel1);
-        MatrixServiceGrpc.MatrixServiceBlockingStub stub2
-                = MatrixServiceGrpc.newBlockingStub(channel2);
-        MatrixServiceGrpc.MatrixServiceBlockingStub stub3
-                = MatrixServiceGrpc.newBlockingStub(channel3);
+        int totalBlock = splitMatrices.size();
+        int numBlockCalls = (int) (totalBlock * Math.sqrt(totalBlock));
 
-        availableStubs.add(stub1);
-        availableStubs.add(stub2);
-        availableStubs.add(stub3);
-        return availableStubs;
+        ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", addresses[2])
+                .usePlaintext().build();
+        MatrixServiceGrpc.MatrixServiceStub stub = MatrixServiceGrpc.newStub(channel);
+        MatrixReplyStreamObserver replyStream =
+                new MatrixReplyStreamObserver(splitMatrices.size(),
+                        new File("").toPath(), Boolean.FALSE);
+
+        // pick random values
+        List<Integer> M1 = splitMatrices.get(splitMatrices.size() - 1);
+        List<Integer> M2 = splitMatrices.get(splitMatrices.size() - 1);
+        long startTime = System.nanoTime();
+        deadline = deadline * 1000000000; //second
+
+        stub.multiplyBlock(MatrixRequest.newBuilder().setId(4)
+                .setA00(M1.get(0)).setA01(M1.get(1)).setA10(M1.get(2)).setA11(M1.get(3))
+                .setB00(M2.get(0)).setB01(M2.get(1)).setB10(M2.get(2)).setB11(M2.get(3))
+                .build(), replyStream);
+        long endTime = System.nanoTime();
+        double footprint = endTime - startTime;
+        System.out.println("startTime : " + startTime);
+        System.out.println("endTime : " + endTime);
+        System.out.println("Deadline : " + deadline);
+        System.out.println("Footprint : " + footprint);
+        System.out.println("No. Block : " + numBlockCalls);
+        System.out.println("footprint*numBlockCalls : " + (footprint * numBlockCalls));
+
+        int numberServer = (int) ((footprint * numBlockCalls) / (deadline));
+        System.out.println("No. Server Needed: " + numberServer);
+        channel.shutdown();
+
+        if (numberServer > 0 && numberServer < addresses.length) {
+            return numberServer;
+        } else {
+            return 1;
+        }
 
     }
 

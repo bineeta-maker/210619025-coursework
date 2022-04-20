@@ -5,8 +5,10 @@ import org.springframework.web.multipart.MultipartFile;
 import java.nio.file.Path;
 
 public interface MultiplicationService {
-    String getResults(MultipartFile file,Boolean synchronous);
+    String getResults(MultipartFile file, double deadline, Boolean synchronous);
+
     Boolean isValid(MultipartFile file);
+
     Path getFile(MultipartFile file);
 
 }

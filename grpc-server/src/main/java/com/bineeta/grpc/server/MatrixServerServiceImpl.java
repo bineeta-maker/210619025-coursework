@@ -13,7 +13,8 @@ public class MatrixServerServiceImpl extends MatrixServiceGrpc.MatrixServiceImpl
 		int C01 = request.getA01() + request.getB01();
 		int C10 = request.getA10() + request.getB10();
 		int C11 = request.getA11() + request.getB11();
-		MatrixReply response = MatrixReply.newBuilder().setC00(C00).setC01(C01).setC10(C10).setC11(C11).build();
+		MatrixReply response = MatrixReply.newBuilder().setId(request.getId())
+				.setC00(C00).setC01(C01).setC10(C10).setC11(C11).build();
 		reply.onNext(response);
 		reply.onCompleted();
 	}
@@ -26,9 +27,21 @@ public class MatrixServerServiceImpl extends MatrixServiceGrpc.MatrixServiceImpl
 		int C10 = request.getA10() * request.getB00() + request.getA11() * request.getB10();
 		int C11 = request.getA10() * request.getB01() + request.getA11() * request.getB11();
 
-		MatrixReply response = MatrixReply.newBuilder().setC00(C00).setC01(C01).setC10(C10).setC11(C11).build();
+		MatrixReply response = MatrixReply.newBuilder().setId(request.getId())
+				.setC00(C00).setC01(C01).setC10(C10).setC11(C11).build();
 		System.out.println("Response to the client:\n" + response);
 		reply.onNext(response);
+		reply.onCompleted();
+	}
+
+	@Override
+	public void addAllBlock(MatrixRequests request, StreamObserver<MatrixReply> reply) {
+//		System.out.println("Request received from client:\n" + request);
+//
+//		request.getMatrixRequestCount();
+
+	//	MatrixReply response = MatrixReply.newBuilder().setC00(C00).setC01(C01).setC10(C10).setC11(C11).build();
+	//	reply.onNext(response);
 		reply.onCompleted();
 	}
 }

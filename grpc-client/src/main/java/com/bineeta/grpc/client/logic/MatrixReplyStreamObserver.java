@@ -1,38 +1,48 @@
 package com.bineeta.grpc.client.logic;
 
 import com.bineeta.grpc.server.MatrixReply;
+import com.bineeta.grpc.server.MatrixRequest;
+import com.bineeta.grpc.server.MatrixServiceGrpc;
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
 import io.grpc.stub.StreamObserver;
 
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Stream;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.stream.Collectors;
 
 public class MatrixReplyStreamObserver implements StreamObserver<MatrixReply> {
 
-    private Integer numBlock = 0;
+    private Integer numMultipliedBlock = 0;
+    private Integer splitMatrixSize = 0;
     private Path destinationFile;
-    public MatrixReplyStreamObserver(Integer numBlock, Path destinationFile){
-        this.numBlock = numBlock;
+    private Boolean isTest;
+
+    private CountDownLatch cd = null;
+
+    public MatrixReplyStreamObserver(Integer splitMatrixSize, Path destinationFile, Boolean isTest) {
+        this.numMultipliedBlock = (int) (splitMatrixSize * Math.sqrt(splitMatrixSize));
+        this.splitMatrixSize = splitMatrixSize;
         this.destinationFile = destinationFile;
+        this.isTest = isTest;
+        this.cd = new CountDownLatch(numMultipliedBlock);
     }
 
-    public List<String> resultMatrices = new ArrayList<>();
+    private int countdown = 0;
+    public List<MatrixReply> resultMatrices = new ArrayList<>();
 
 
     @Override
     public void onNext(MatrixReply A) {
         StringBuffer str = new StringBuffer();
-        System.out.println("getC00--:"+A.getC00());
-        System.out.println("getC01--:"+A.getC01());
-        System.out.println("getC10--:"+A.getC10());
-        System.out.println("getC11--:"+A.getC11());
-        resultMatrices.add(str.append(A.getC00()).append(" ").append(A.getC01())
-                .append(" ").append(A.getC10()).append(" ").append(A.getC11()).toString());
-
+        resultMatrices.add(A);
     }
 
     @Override
@@ -41,31 +51,62 @@ public class MatrixReplyStreamObserver implements StreamObserver<MatrixReply> {
 
     @Override
     public void onCompleted() {
+        if (isTest) {
+            cd.countDown();
+            //System.out.println("onCompleted resultMatrices--: " + resultMatrices);
+            if (cd.getCount() == 0) {
+                pushToAddBlock();
+            }
+        }
+    }
 
+    private void pushToAddBlock() {
+        List<MatrixReply> finalAnswer = new ArrayList<>();
+        Map<Integer, List<MatrixReply>> groupedResultMatrices =
+                resultMatrices.stream().collect(Collectors.groupingBy(w -> w.getId()));
 
-        if (resultMatrices.size()==numBlock){
-            System.out.println("---- resultMatrices----"+resultMatrices);
-            String str = formResult(destinationFile, resultMatrices);
+        ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", 9090)
+                .usePlaintext()
+                .build();
+        MatrixServiceGrpc.MatrixServiceBlockingStub stub
+                = MatrixServiceGrpc.newBlockingStub(channel);
+
+        for (Map.Entry<Integer, List<MatrixReply>> entry : groupedResultMatrices.entrySet()) {
+            int size = entry.getValue().size();
+            int blockNumber = entry.getKey();
+            List<MatrixReply> blocks = entry.getValue();
+            MatrixReply added = MatrixReply.newBuilder()
+                    .setC00(0).setC01(0).setC10(0).setC11(0).build();
+            for (int i = 1; i <= size; i++) {
+                // keep on adding for each row and column
+                MatrixReply A = blocks.get(i - 1);
+                added = stub.addBlock(MatrixRequest.newBuilder().setId(blockNumber + 1)//First Result Block Calculation
+                        .setA00(added.getC00()).setA01(added.getC01()).setA10(added.getC10()).setA11(added.getC11())
+                        .setB00(A.getC00()).setB01(A.getC01()).setB10(A.getC10()).setB11(A.getC11()).build());
+            }
+            finalAnswer.add(added);
         }
 
-        //String str = new MultiplicationService().formResult("D:\\localdata\\inputdata", A.resultMatrices);
+        finalAnswer.sort(Comparator.comparing(o -> ((Integer) o.getId())));
+        formResult(destinationFile, finalAnswer);
     }
 
 
-    private String formResult(Path destinationFile, List<String> resultMatrices) {
-        FileWriter myWriter = null;
+    private String formResult(Path destinationFile, List<MatrixReply> finalAnswer) {
         StringBuffer str = new StringBuffer();
         String outputFile = destinationFile.toString().replace(".txt", "-output.txt");
+        System.out.println("outputFile----" + outputFile);
         try {
-            int cycle = (int) numBlock / 2; //4=2,8=3,16=8
-            myWriter = new FileWriter(outputFile);
-            for (int i = 0; i < resultMatrices.size(); i = i + cycle) {
+            int cycle = (int) Math.sqrt(splitMatrixSize); //4=2,16=4
+            FileWriter myWriter = new FileWriter(new File(outputFile));
+            for (int i = 0; i < finalAnswer.size(); i = i + cycle) {
                 StringBuffer tStr = new StringBuffer();
                 StringBuffer bStr = new StringBuffer();
                 for (int t = 0; t < cycle; t++) {
-                    String[] C = resultMatrices.get(t + i).split(" ");
-                    tStr.append(C[0]).append(" ").append(C[1]).append(" ");
-                    bStr.append(C[2]).append(" ").append(C[3]).append(" ");
+                    //if (resultMatrices.get(0))
+                    MatrixReply C = finalAnswer.get(t + i);
+                    tStr.append(C.getC00()).append(" ").append(C.getC01()).append(" ");
+                    bStr.append(C.getC10()).append(" ").append(C.getC11()).append(" ");
                 }
                 myWriter.write(tStr.append("\n").toString());
                 myWriter.write(bStr.append("\n").toString());
@@ -77,9 +118,6 @@ public class MatrixReplyStreamObserver implements StreamObserver<MatrixReply> {
         return (outputFile);
 
     }
-
-
-
 
 
 }

@@ -49,14 +49,14 @@ public class FileUploadController {
 	}
 
 	@PostMapping("/")
-	public String handleFileUpload(@RequestParam("file") MultipartFile file,
+	public String handleFileUpload(@RequestParam("file") MultipartFile file, @RequestParam("deadline") Double deadline,
 			RedirectAttributes redirectAttributes) {
 		storageService.store(file);
 		boolean isValid = multiplicationService.isValid(file);
 		// This system can take both sync and async call. boolean set to test out both.
-		boolean synchronousCall = Boolean.TRUE;
+		boolean synchronousCall = Boolean.FALSE;
 		if(isValid){
-			multiplicationService.getResults(file,synchronousCall);
+			multiplicationService.getResults(file,deadline,synchronousCall);
 			redirectAttributes.addFlashAttribute("message",
 					"Matrix Multiplication Complete!");
 			storageService.deleteFile(file);
