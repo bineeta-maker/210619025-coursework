@@ -63,7 +63,7 @@ public class MultiChannelMultiplicationService implements MultiplicationService 
         // No of servers needed
         int numServerNeeded = getServerNeeded(splitMatrices, deadline);
         System.out.println("No. Server Needed: " + numServerNeeded);
-
+        int sn = 0;
         if (synchronous) {
             long startTime = System.nanoTime();
             availableBlockingStubs = new MulitplicationUtils().getAvailableChannelBlockingStubs();
@@ -81,7 +81,7 @@ public class MultiChannelMultiplicationService implements MultiplicationService 
                         List<Integer> M1 = splitMatrices.get(a);
                         List<Integer> M2 = splitMatrices.get(j);
                         // multiplty each block from M1 and M2
-                        int sn = (int)Math.floor(Math.random() * numServerNeeded);
+                        System.out.println("Stub");
                         A = availableBlockingStubs.get(sn).multiplyBlock(MatrixRequest.newBuilder()//First Result Block Calculation
                                 .setA00(M1.get(0)).setA01(M1.get(1)).setA10(M1.get(2)).setA11(M1.get(3))
                                 .setB00(M2.get(0)).setB01(M2.get(1)).setB10(M2.get(2)).setB11(M2.get(3))
@@ -91,6 +91,11 @@ public class MultiChannelMultiplicationService implements MultiplicationService 
                                 .setA00(added.getC00()).setA01(added.getC01()).setA10(added.getC10()).setA11(added.getC11())
                                 .setB00(A.getC00()).setB01(A.getC01()).setB10(A.getC10()).setB11(A.getC11()).build());
                         a++;
+                        // stub number
+                        sn++;
+                        if (sn == numServerNeeded){
+                            sn = 0;
+                        }
                     }
                     resultMatrices.add(str.append(added.getC00()).append(" ").append(added.getC01())
                             .append(" ").append(added.getC10()).append(" ").append(added.getC11()).toString());
