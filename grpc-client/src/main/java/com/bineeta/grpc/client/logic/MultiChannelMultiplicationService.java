@@ -81,7 +81,7 @@ public class MultiChannelMultiplicationService implements MultiplicationService 
                         List<Integer> M1 = splitMatrices.get(a);
                         List<Integer> M2 = splitMatrices.get(j);
                         // multiplty each block from M1 and M2
-                        System.out.println("Stub");
+                        System.out.println("Stub---"+sn);
                         A = availableBlockingStubs.get(sn).multiplyBlock(MatrixRequest.newBuilder()//First Result Block Calculation
                                 .setA00(M1.get(0)).setA01(M1.get(1)).setA10(M1.get(2)).setA11(M1.get(3))
                                 .setB00(M2.get(0)).setB01(M2.get(1)).setB10(M2.get(2)).setB11(M2.get(3))
