@@ -54,7 +54,7 @@ public class FileUploadController {
 		storageService.store(file);
 		boolean isValid = multiplicationService.isValid(file);
 		// This system can take both sync and async call. boolean set to test out both.
-		boolean synchronousCall = Boolean.FALSE;
+		boolean synchronousCall = Boolean.TRUE;
 		if(isValid){
 			multiplicationService.getResults(file,deadline,synchronousCall);
 			redirectAttributes.addFlashAttribute("message",

@@ -53,7 +53,6 @@ public class MatrixReplyStreamObserver implements StreamObserver<MatrixReply> {
     public void onCompleted() {
         if (isTest) {
             cd.countDown();
-            //System.out.println("onCompleted resultMatrices--: " + resultMatrices);
             if (cd.getCount() == 0) {
                 pushToAddBlock();
             }
@@ -95,7 +94,6 @@ public class MatrixReplyStreamObserver implements StreamObserver<MatrixReply> {
     private String formResult(Path destinationFile, List<MatrixReply> finalAnswer) {
         StringBuffer str = new StringBuffer();
         String outputFile = destinationFile.toString().replace(".txt", "-output.txt");
-        System.out.println("outputFile----" + outputFile);
         try {
             int cycle = (int) Math.sqrt(splitMatrixSize); //4=2,16=4
             FileWriter myWriter = new FileWriter(new File(outputFile));

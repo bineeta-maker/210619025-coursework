@@ -56,19 +56,18 @@ public class MultiChannelMultiplicationService implements MultiplicationService 
         List<List<Integer>> splitMatrices = getSplitMatrices(destinationFile);
         int totalBlock = splitMatrices.size();
         int numBlockCalls = (int) (totalBlock * Math.sqrt(totalBlock));
-        int totalServer = 3;
 
         System.out.println("ACTUAL FUN BEGINS:" + splitMatrices);
         //MatrixReplyStreamObserver replyStream = new MatrixReplyStreamObserver(numBlock, destinationFile);
 
         // No of servers needed
         int numServerNeeded = getServerNeeded(splitMatrices, deadline);
+        System.out.println("No. Server Needed: " + numServerNeeded);
 
         if (synchronous) {
             long startTime = System.nanoTime();
             availableBlockingStubs = new MulitplicationUtils().getAvailableChannelBlockingStubs();
             int cycle = (int) Math.sqrt(totalBlock);
-            int t = 0;
             for (int w = 0; w < cycle; w++) {
                 int b = 0;
                 for (int i = 0; i < cycle; i++) {
@@ -82,15 +81,13 @@ public class MultiChannelMultiplicationService implements MultiplicationService 
                         List<Integer> M1 = splitMatrices.get(a);
                         List<Integer> M2 = splitMatrices.get(j);
                         // multiplty each block from M1 and M2
-                        t++;
-                        int nn = t % 3;
-
-                        A = availableBlockingStubs.get(nn).multiplyBlock(MatrixRequest.newBuilder()//First Result Block Calculation
+                        int sn = (int)Math.floor(Math.random() * numServerNeeded);
+                        A = availableBlockingStubs.get(sn).multiplyBlock(MatrixRequest.newBuilder()//First Result Block Calculation
                                 .setA00(M1.get(0)).setA01(M1.get(1)).setA10(M1.get(2)).setA11(M1.get(3))
                                 .setB00(M2.get(0)).setB01(M2.get(1)).setB10(M2.get(2)).setB11(M2.get(3))
                                 .build());
                         // keep on adding for each row and column
-                        added = availableBlockingStubs.get(nn).addBlock(MatrixRequest.newBuilder()//First Result Block Calculation
+                        added = availableBlockingStubs.get(sn).addBlock(MatrixRequest.newBuilder()//First Result Block Calculation
                                 .setA00(added.getC00()).setA01(added.getC01()).setA10(added.getC10()).setA11(added.getC11())
                                 .setB00(A.getC00()).setB01(A.getC01()).setB10(A.getC10()).setB11(A.getC11()).build());
                         a++;
@@ -102,7 +99,7 @@ public class MultiChannelMultiplicationService implements MultiplicationService 
             }
             long endTime = System.nanoTime();
             long footprint = endTime - startTime;
-            System.out.println("SYNCH GRPC CALL FOOTPRINT TIME: " + (footprint / 1000));
+            System.out.println("SYNCH GRPC CALL, TOTAL FOOTPRINT TIME: " + (footprint / 1000));
 
             formResult(destinationFile, resultMatrices);
         } else {
@@ -179,13 +176,10 @@ public class MultiChannelMultiplicationService implements MultiplicationService 
         double footprint = endTime - startTime;
         System.out.println("startTime : " + startTime);
         System.out.println("endTime : " + endTime);
-        System.out.println("Deadline : " + deadline);
-        System.out.println("Footprint : " + footprint);
-        System.out.println("No. Block : " + numBlockCalls);
-        System.out.println("footprint*numBlockCalls : " + (footprint * numBlockCalls));
-
+        System.out.println("footprint : " + footprint);
+        System.out.println("numBlockCalls : " + numBlockCalls);
         int numberServer = (int) ((footprint * numBlockCalls) / (deadline));
-        System.out.println("No. Server Needed: " + numberServer);
+        System.out.println("calculated : "+numberServer);
         channel.shutdown();
 
         if (numberServer > 0 && numberServer < addresses.length) {
